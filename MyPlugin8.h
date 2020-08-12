@@ -26,8 +26,11 @@ char m_transitionCommand[STRMAX]{};
 protected:
 	typedef enum _ID_Interface
 	{
-		ID_CMD_1
+		ID_CMD_1, 
+		ID_CMD_2,
+		ID_CMD_3
 	} ID_Interface;
+
 };
 
 #endif
