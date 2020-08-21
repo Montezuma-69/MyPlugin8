@@ -3,6 +3,87 @@ using namespace std;
 #include <string>
 #include <ctime>
 
+#include <iostream>
+#include <vector>
+#include <functional>
+#include <algorithm>
+#include <sstream>
+
+
+auto split(const std::string& value, char separator)
+-> std::vector<std::string>
+{
+	std::vector<std::string> result;
+	std::string::size_type p = 0;
+	std::string::size_type q;
+	while ((q = value.find(separator, p)) != std::string::npos) {
+		result.emplace_back(value, p, q - p);
+		p = q + 1;
+	}
+	result.emplace_back(value, p);
+	return result;
+}
+
+template <typename KeyFn>
+struct key_fn_adaptor
+{
+	KeyFn&& _key_fn;
+	template <typename Lhs, typename Rhs>
+	auto operator()(Lhs&& lhs, Rhs&& rhs) const -> bool
+	{
+		return _key_fn(lhs) < _key_fn(rhs);
+	}
+};
+
+template <typename Range>
+void sort_range_with_key_fn(Range&& range)
+{
+	// enable ADL with fallback on default implementations
+	using std::begin;
+	using std::end;
+
+	std::sort(begin(range), end(range));
+	//    std::sort(begin(range), end(range),
+	//        key_fn_adaptor<KeyFn>{std::forward<KeyFn>(key_fn)});
+}
+
+class noop
+{
+	friend auto operator<<(std::ostream& os, const noop&)
+		-> std::ostream&
+	{
+		return os;
+	}
+} noop;
+
+template <typename Iterator, typename Separator>
+auto join(Iterator first, Iterator last, Separator&& separator = noop)
+-> std::string
+{
+	if (first == last) {
+		return std::string{};
+	}
+	else {
+		std::ostringstream os;
+		os << *first;
+		for (++first; first != last; ++first) {
+			os << *first << separator;
+		}
+		return os.str(); // NOTE: move is currently not supported
+	}
+}
+
+template <typename Range, typename Separator>
+auto join_range(Range&& range, Separator&& separator = noop)
+-> std::string
+{
+	// enable ADL with fallback on default implementations
+	using std::begin;
+	using std::end;
+	//    return join(begin(range), end(range), '.');
+	return join(begin(range), end(range), std::forward<Separator>(separator));
+}
+
 //-----------------------------------------------------------------------------
 HRESULT VDJ_API CMyPlugin8::OnLoad()
 {
@@ -12,6 +93,7 @@ HRESULT VDJ_API CMyPlugin8::OnLoad()
 	DeclareParameterCommand(m_transitionCommand, ID_CMD_3, "Command", "CMD", sizeof(m_transitionCommand));
 	DeclareParameterCommand(m_transitionCommand, ID_CMD_4, "Command", "CMD", sizeof(m_transitionCommand));
 	DeclareParameterCommand(m_transitionCommand, ID_CMD_5, "Command", "CMD", sizeof(m_transitionCommand));
+	DeclareParameterCommand(m_transitionCommand, ID_CMD_6, "Command", "CMD", sizeof(m_transitionCommand));
 	return S_OK;
 }
 //-----------------------------------------------------------------------------
@@ -73,10 +155,7 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 
 			s_Result = s_commentString.replace(s_commentString.find(s_genre), string(s_genre).size(), "");
 
-			s_MainPart = "browsed_song 'comment' '";
-			s_EndPart = "'";
-
-			SendString = s_MainPart + s_Result + s_EndPart;
+			SendString = "browsed_song 'comment' '" + s_Result + "'";
 			c_SendString = SendString.c_str();
 
 			SendCommand(c_SendString);
@@ -88,10 +167,7 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 
 			s_Result = s_commentString.replace(s_commentString.find(s_genre), string(s_genre).size(), "");
 
-			s_MainPart = "browsed_song 'user1' '";
-			s_EndPart = "'";
-
-			SendString = s_MainPart + s_Result + s_EndPart;
+			SendString = "browsed_song 'user1' '" + s_Result + "'";
 			c_SendString = SendString.c_str();
 
 			SendCommand(c_SendString);
@@ -189,6 +265,23 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 				c_SendString = SendString.c_str();
 				SendCommand(c_SendString);
 			}
+			break;
+
+
+		case ID_CMD_6:
+			GetStringInfo("get_browsed_song 'comment'", commentString, 100);
+			s_commentString = commentString;
+
+			s_Result = s_commentString + s_genre;
+
+			auto&& tokens = split(s_Result, '.');
+			sort_range_with_key_fn(tokens);
+			s_Result = join_range(tokens, '.');
+
+			SendString = "browsed_song 'comment' '" + s_Result + "'";
+			c_SendString = SendString.c_str();
+
+			SendCommand(c_SendString);
 			break;
 
 			return 0;

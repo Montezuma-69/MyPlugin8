@@ -30,7 +30,9 @@ protected:
 		ID_CMD_2,
 		ID_CMD_3,
 		ID_CMD_4,
-		ID_CMD_5
+		ID_CMD_5,
+		ID_CMD_6
+
 	} ID_Interface;
 
 };
