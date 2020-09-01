@@ -142,8 +142,6 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 		std::string s_deck1user2;
 		std::string s_deck2user2;
 		std::string s_Result;
-		std::string s_MainPart;
-		std::string s_EndPart;
 		std::string SendString;
 		const char* c_SendString;
 
