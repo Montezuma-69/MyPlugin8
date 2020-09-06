@@ -125,6 +125,24 @@ HRESULT VDJ_API CMyPlugin8::OnGetUserInterface(TVdjPluginInterface8* pluginInter
 	return S_OK;
 }
 
+
+std::string rtrim(std::string s, std::string const& delim = " \t\r\n")
+{
+	std::string::size_type last = s.find_last_not_of(delim.c_str());
+	return last == std::string::npos ? "" : s.erase(last + 1);
+}
+
+std::string ltrim(std::string s, std::string const& delim = " \t\r\n")
+{
+	return s.erase(0, s.find_first_not_of(delim.c_str()));
+}
+
+std::string trim(std::string s, std::string const& delim = " \t\r\n")
+{
+	return ltrim(rtrim(s, delim), delim);
+}
+
+
 //---------------------------------------------------------------------------
 HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 {
@@ -148,12 +166,12 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 		switch (id)
 		{
 			case ID_CMD_1:
-			GetStringInfo("get_browsed_song 'comment'", commentString, 100);
+			GetStringInfo("get_browsed_song 'genre'", commentString, 100);
 			s_commentString = commentString;
 
 			s_Result = s_commentString.replace(s_commentString.find(s_genre), string(s_genre).size(), "");
 
-			SendString = "browsed_song 'comment' '" + s_Result + "'";
+			SendString = "browsed_song 'genre' '" + s_Result + "'";
 			c_SendString = SendString.c_str();
 
 			SendCommand(c_SendString);
@@ -173,21 +191,16 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			break;
 
 /*		case ID_CMD_3:
-			GetStringInfo("get_browsed_song 'track'", commentString, 100);
-			s_commentString = commentString;
-			if (s_commentString.find("159") != string::npos) {}
-			else {
-				s_MainPart = "browsed_song 'track' '";
-				s_Result = to_string(std::time(nullptr));
-				s_Result = s_Result + to_string(std::rand() % 999 + 1000);
-				s_EndPart = ".'";
+			GetStringInfo("get_browsed_song 'comment'", commentString, 100);
+			s_commentString = trim(commentString," ");
 
-				SendString = s_MainPart + s_Result + s_EndPart;
-				c_SendString = SendString.c_str();
-				SendCommand(c_SendString);
-			}
+			SendString = "browsed_song 'genre' '" + s_commentString + "'";
+			c_SendString = SendString.c_str();
+
+			SendCommand(c_SendString);
+
 			break;
-*/
+			*/
 
 		case ID_CMD_4:
 			GetStringInfo("deck 1 get_loaded_song track", deck1track, 100);
@@ -267,7 +280,7 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 
 
 		case ID_CMD_6:
-			GetStringInfo("get_browsed_song 'comment'", commentString, 100);
+			GetStringInfo("get_browsed_song 'genre'", commentString, 100);
 			s_commentString = commentString;
 
 			s_Result = s_commentString + s_genre;
@@ -276,7 +289,7 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			sort_range_with_key_fn(tokens);
 			s_Result = join_range(tokens, '.');
 
-			SendString = "browsed_song 'comment' '" + s_Result + "'";
+			SendString = "browsed_song 'genre' '" + s_Result + "'";
 			c_SendString = SendString.c_str();
 
 			SendCommand(c_SendString);
