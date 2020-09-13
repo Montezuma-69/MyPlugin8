@@ -142,21 +142,34 @@ std::string trim(std::string s, std::string const& delim = " \t\r\n")
 	return ltrim(rtrim(s, delim), delim);
 }
 
-
-std::string CaseChecker(std::string data)
+std::string CaseChecker(std::string data, int T)
 {
+	static int typ = 0;
+	if (T == 1) { typ = 1; } //artist
+	if (T == 2) { typ = 2; } //title
+
 	static string last = " ";
 	for_each(data.begin(), data.end(), [](char& c) {
 		if (last == " " && c != ' ' && ::isalpha(c))
 		c = ::toupper(c);
 		if (last != " " && c != ' ' && ::isalpha(c))
 		c = ::tolower(c);
-
+		if (last == "-")
+			c = ::toupper(c);
+		if (last == "\(")
+			c = ::toupper(c);
+		if (last == "\'" && typ == 1) {
+			c = ::toupper(c);
+		}
+		if (last == "\'" && typ == 2) {
+			c = ::tolower(c);
+		}
 		last = c;
 		});
 	last = " ";
 	return data;
 }
+
 
 //---------------------------------------------------------------------------
 HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
@@ -216,8 +229,8 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			GetStringInfo("get_browsed_song 'title'", title, 100);
 			s_title = trim(title, " ");
 
-			s_artist = CaseChecker(s_artist);
-			s_title = CaseChecker(s_title);
+			s_artist = CaseChecker(s_artist, 1);
+			s_title = CaseChecker(s_title, 2);
 
 			SendString = "browsed_song 'artist' \"" + s_artist + "\"";
 			c_SendString = SendString.c_str();
