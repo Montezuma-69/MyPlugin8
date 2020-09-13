@@ -143,6 +143,21 @@ std::string trim(std::string s, std::string const& delim = " \t\r\n")
 }
 
 
+std::string CaseChecker(std::string data)
+{
+	static string last = " ";
+	for_each(data.begin(), data.end(), [](char& c) {
+		if (last == " " && c != ' ' && ::isalpha(c))
+		c = ::toupper(c);
+		if (last != " " && c != ' ' && ::isalpha(c))
+		c = ::tolower(c);
+
+		last = c;
+		});
+	last = " ";
+	return data;
+}
+
 //---------------------------------------------------------------------------
 HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 {
@@ -153,6 +168,10 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 		char deck2track[2048];
 		char deck1user2[2048];
 		char deck2user2[2048];
+		char artist[2048];
+		char title[2048];
+
+		const char* c_SendString;
 
 		std::string s_commentString;
 		std::string s_deck1track;
@@ -161,7 +180,8 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 		std::string s_deck2user2;
 		std::string s_Result;
 		std::string SendString;
-		const char* c_SendString;
+		std::string s_artist;
+		std::string s_title;
 
 		switch (id)
 		{
@@ -190,17 +210,23 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 
 			break;
 
-/*		case ID_CMD_3:
-			GetStringInfo("get_browsed_song 'comment'", commentString, 100);
-			s_commentString = trim(commentString," ");
+		case ID_CMD_3:
+			GetStringInfo("get_browsed_song 'artist'", artist, 100);
+			s_artist = trim(artist," ");
+			GetStringInfo("get_browsed_song 'title'", title, 100);
+			s_title = trim(title, " ");
 
-			SendString = "browsed_song 'genre' '" + s_commentString + "'";
+			s_artist = CaseChecker(s_artist);
+			s_title = CaseChecker(s_title);
+
+			SendString = "browsed_song 'artist' \"" + s_artist + "\"";
 			c_SendString = SendString.c_str();
-
 			SendCommand(c_SendString);
-
+			SendString = "browsed_song 'title' \"" + s_title + "\"";
+			c_SendString = SendString.c_str();
+			SendCommand(c_SendString);
 			break;
-			*/
+
 
 		case ID_CMD_4:
 			GetStringInfo("deck 1 get_loaded_song track", deck1track, 100);
