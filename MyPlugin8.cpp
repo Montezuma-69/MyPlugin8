@@ -8,7 +8,7 @@ using namespace std;
 #include <functional>
 #include <algorithm>
 #include <sstream>
-
+#include <regex>
 
 auto split(const std::string& value, char separator)
 -> std::vector<std::string>
@@ -94,6 +94,8 @@ HRESULT VDJ_API CMyPlugin8::OnLoad()
 	DeclareParameterCommand(m_transitionCommand, ID_CMD_4, "Command", "CMD", sizeof(m_transitionCommand));
 	DeclareParameterCommand(m_transitionCommand, ID_CMD_5, "Command", "CMD", sizeof(m_transitionCommand));
 	DeclareParameterCommand(m_transitionCommand, ID_CMD_6, "Command", "CMD", sizeof(m_transitionCommand));
+	DeclareParameterCommand(m_transitionCommand, ID_CMD_7, "Command", "CMD", sizeof(m_transitionCommand));
+	DeclareParameterCommand(m_transitionCommand, ID_CMD_8, "Command", "CMD", sizeof(m_transitionCommand));
 	return S_OK;
 }
 //-----------------------------------------------------------------------------
@@ -144,30 +146,49 @@ std::string trim(std::string s, std::string const& delim = " \t\r\n")
 
 std::string CaseChecker(std::string data, int T)
 {
+
+	std::locale::global(std::locale("de_DE.UTF-8"));
+
 	static int typ = 0;
 	if (T == 1) { typ = 1; } //artist
 	if (T == 2) { typ = 2; } //title
 
+	static string s_c;
+
 	static string last = " ";
-	for_each(data.begin(), data.end(), [](char& c) {
-		if (last == " " && c != ' ' && ::isalpha(c))
-		c = ::toupper(c);
-		if (last != " " && c != ' ' && ::isalpha(c))
-		c = ::tolower(c);
-		if (last == "-")
-			c = ::toupper(c);
-		if (last == "\(")
-			c = ::toupper(c);
-		if (last == "\'" && typ == 1) {
-			c = ::toupper(c);
-		}
-		if (last == "\'" && typ == 2) {
-			c = ::tolower(c);
-		}
+	for_each(data.begin(), data.end(), [](char & c) {
+		if (last == " " && c != ' ' ) c = toupper(c);
+		if (last != " " && c != ' ' ) c = tolower(c);
+		if (last == "-") c = toupper(c);
+		if (last == ",") c = toupper(c);
+		if (last == "(") c = toupper(c);
+		if (last == "\'" && typ == 1) c = toupper(c);
+		if (last == "\'" && typ == 2) c = tolower(c);
+
 		last = c;
 		});
 	last = " ";
+
+	data = std::regex_replace(data, std::regex("ö"), "Ö");
 	return data;
+}
+
+void replaceAll(std::string& str, const std::string& from, const std::string& to) {
+	if (from.empty())
+		return;
+	size_t start_pos = 0;
+	while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+		str.replace(start_pos, from.length(), to);
+		start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+	}
+}
+
+bool replace(std::string& str, const std::string& from, const std::string& to) {
+	size_t start_pos = str.find(from);
+	if (start_pos == std::string::npos)
+		return false;
+	str.replace(start_pos, from.length(), to);
+	return true;
 }
 
 
@@ -175,7 +196,7 @@ std::string CaseChecker(std::string data, int T)
 HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 {
 	
-	std::string s_genre = m_transitionCommand;
+	std::string t_command = m_transitionCommand;
 		char commentString[2048];
 		char deck1track[2048];
 		char deck2track[2048];
@@ -183,6 +204,9 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 		char deck2user2[2048];
 		char artist[2048];
 		char title[2048];
+		char genre[2048];
+		char user1[2048];
+		char remix[2048];
 
 		const char* c_SendString;
 
@@ -195,14 +219,21 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 		std::string SendString;
 		std::string s_artist;
 		std::string s_title;
+		std::string s_genre;
+		std::string s_user1;
+		std::string s_remix;
+
+		int mix;
+		int xxx;
+		std::size_t found;
 
 		switch (id)
 		{
-			case ID_CMD_1:
-			GetStringInfo("get_browsed_song 'genre'", commentString, 100);
-			s_commentString = commentString;
+			case ID_CMD_1: //Tag Genre entfernen
+			GetStringInfo("get_browsed_song 'genre'", genre, 100);
+			s_genre = genre;
 
-			s_Result = s_commentString.replace(s_commentString.find(s_genre), string(s_genre).size(), "");
+			s_Result = s_genre.replace(s_genre.find(t_command), string(t_command).size(), "");
 
 			SendString = "browsed_song 'genre' '" + s_Result + "'";
 			c_SendString = SendString.c_str();
@@ -210,11 +241,11 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			SendCommand(c_SendString);
 			break;
 
-		case ID_CMD_2:
-			GetStringInfo("get_browsed_song 'user1'", commentString, 100);
-			s_commentString = commentString;
+		case ID_CMD_2: //Tag aus user1 entfernen
+			GetStringInfo("get_browsed_song 'user1'", user1, 100);
+			s_user1 = user1;
 
-			s_Result = s_commentString.replace(s_commentString.find(s_genre), string(s_genre).size(), "");
+			s_Result = s_user1.replace(s_user1.find(t_command), string(t_command).size(), "");
 
 			SendString = "browsed_song 'user1' '" + s_Result + "'";
 			c_SendString = SendString.c_str();
@@ -223,7 +254,7 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 
 			break;
 
-		case ID_CMD_3:
+		case ID_CMD_3: //Großbuchstaben und Kleinbuchstaben
 			GetStringInfo("get_browsed_song 'artist'", artist, 100);
 			s_artist = trim(artist," ");
 			GetStringInfo("get_browsed_song 'title'", title, 100);
@@ -233,15 +264,13 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			s_title = CaseChecker(s_title, 2);
 
 			SendString = "browsed_song 'artist' \"" + s_artist + "\"";
-			c_SendString = SendString.c_str();
-			SendCommand(c_SendString);
+			SendCommand(SendString.c_str());
 			SendString = "browsed_song 'title' \"" + s_title + "\"";
-			c_SendString = SendString.c_str();
-			SendCommand(c_SendString);
+			SendCommand(SendString.c_str());
 			break;
 
 
-		case ID_CMD_4:
+		case ID_CMD_4: //merge zwei songs
 			GetStringInfo("deck 1 get_loaded_song track", deck1track, 100);
 			s_deck1track = deck1track;
 			GetStringInfo("deck 2 get_loaded_song track", deck2track, 100);
@@ -253,13 +282,13 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 
 			if ((s_deck1track == s_deck2track) && (s_deck1track != "")) break;
 
-			if (s_deck1track == "") {
+			if (s_deck1track.find(".")) {
 				s_deck1track = to_string(std::time(nullptr)) + "1.";
 				SendString = "deck 1 loaded_song track \"" + s_deck1track + "\"";
 				c_SendString = SendString.c_str();
 				SendCommand(c_SendString);
 			}
-			if (s_deck2track == "") {
+			if (s_deck2track.find(".")) {
 				s_deck2track = to_string(std::time(nullptr)) + "2.";
 				SendString = "deck 2 loaded_song track \"" + s_deck2track + "\"";
 				c_SendString = SendString.c_str();
@@ -285,7 +314,7 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			}
 			break;
 
-		case ID_CMD_5:
+		case ID_CMD_5: //unmerge zwei Songs
 			GetStringInfo("deck 1 get_loaded_song track", deck1track, 100);
 			s_deck1track = deck1track;
 			GetStringInfo("deck 2 get_loaded_song track", deck2track, 100);
@@ -317,25 +346,84 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			}
 			break;
 
+		case ID_CMD_7: // .mix und .xxx auswerten
+			GetStringInfo("get_loaded_song 'user1'", user1, 100);
+			s_user1 = user1;
 
-		case ID_CMD_6:
-			GetStringInfo("get_browsed_song 'genre'", commentString, 100);
-			s_commentString = commentString;
+			found = s_user1.find("mix.");
+			if (found != std::string::npos) { mix = 1; } else { mix = 0; }
+	
+			SendString = "set 'mix' " + to_string(mix);
+				c_SendString = SendString.c_str();
+				SendCommand(c_SendString);
 
-			s_Result = s_commentString + s_genre;
+			found = s_user1.find("xxx.");
+			if (found != std::string::npos) { xxx = 1; } else { xxx = 0; }
+			GetStringInfo("get_var '$censor'", user1, 100);
+			s_user1 = user1;
+
+			if (s_user1 == "1" && xxx == 1) { s_Result = "1"; }
+			else { s_Result = "0"; }
+			
+			SendString = "set 'xxx' " + s_Result;
+			SendCommand(SendString.c_str());
+
+			if (s_Result == "1") { SendString = "video_fx 'Shader' on"; } else { SendString = "video_fx 'Shader' off"; }
+			SendCommand(SendString.c_str());
+			break;
+
+		case ID_CMD_8: //Remix Klammern entfernen
+			GetStringInfo("get_browsed_song 'remix'", remix, 100);
+			s_remix = remix;
+
+			if (s_remix.at(0) == '\'') { break; }
+
+
+			if (s_remix.at(0) == ' ') { s_remix.replace(0, 1, ""); }
+			if (s_remix.at(0) == ' ') { s_remix.replace(0, 1, ""); }
+
+			replaceAll(s_remix, "[", "");
+			replaceAll(s_remix, "]", "");
+			replaceAll(s_remix, "(", "");
+			replaceAll(s_remix, ")", "");
+			replaceAll(s_remix, "  ", " ");
+			replaceAll(s_remix, "  ", " ");
+			replaceAll(s_remix, "  ", " ");
+
+			s_remix = regex_replace(s_remix, regex(" Clean Single"), ".Clean.Single");
+			s_remix = regex_replace(s_remix, regex(" Clean"), ".Clean");
+			s_remix = regex_replace(s_remix, regex(" Extended"), ".Extended");
+			s_remix = regex_replace(s_remix, regex(" Intro"), ".Intro");
+			s_remix = regex_replace(s_remix, regex(" Outro"), ".Outro");
+			s_remix = regex_replace(s_remix, regex(" Dirty"), ".Dirty");
+			s_remix = regex_replace(s_remix, regex(" RS"), ".RS");
+			s_remix = regex_replace(s_remix, regex(" HD"), ".HD");
+			s_remix = regex_replace(s_remix, regex(" 1080"), ".1080");
+			s_remix = regex_replace(s_remix, regex(" Full.HD"), ".Full HD");
+
+
+			SendString = "browsed_song 'remix' '" + s_remix + "'";
+			SendCommand(SendString.c_str());
+			break;
+
+		case ID_CMD_6: //genre hinzufügen und sortieren
+			GetStringInfo("get_browsed_song 'genre'", genre, 100);
+			s_genre = genre;
+
+			if (s_genre.find(".") == string::npos) { s_genre = ""; }
+
+			s_Result = s_genre + t_command;
 
 			auto&& tokens = split(s_Result, '.');
 			sort_range_with_key_fn(tokens);
 			s_Result = join_range(tokens, '.');
 
 			SendString = "browsed_song 'genre' '" + s_Result + "'";
-			c_SendString = SendString.c_str();
-
-			SendCommand(c_SendString);
+			SendCommand(SendString.c_str());
 			break;
-
-			return 0;
+					
 		}
+	return 0;
 }
 
 

@@ -130,6 +130,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /y C:\Users\monty\source\repos\MyPlugin8\x64\Debug\MyPlugin8.dll C:\Users\monty\Documents\VirtualDJ\Plugins64\SoundEffect</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Kopiere Datei ins Zielverzeichnis</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
