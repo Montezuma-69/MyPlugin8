@@ -96,6 +96,7 @@ HRESULT VDJ_API CMyPlugin8::OnLoad()
 	DeclareParameterCommand(m_transitionCommand, ID_CMD_6, "Command", "CMD", sizeof(m_transitionCommand));
 	DeclareParameterCommand(m_transitionCommand, ID_CMD_7, "Command", "CMD", sizeof(m_transitionCommand));
 	DeclareParameterCommand(m_transitionCommand, ID_CMD_8, "Command", "CMD", sizeof(m_transitionCommand));
+	DeclareParameterCommand(m_transitionCommand, ID_CMD_9, "Command", "CMD", sizeof(m_transitionCommand));
 	return S_OK;
 }
 //-----------------------------------------------------------------------------
@@ -280,20 +281,24 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			GetStringInfo("deck 2 get_loaded_song user2", deck2user2, 200);
 			s_deck2user2 = deck2user2;
 
-			if ((s_deck1track == s_deck2track) && (s_deck1track != "")) break;
-
-			if (s_deck1track.find(".")) {
+			if (s_deck1track.find(".") != string::npos) {
+				//.. found
+			} else  {
 				s_deck1track = to_string(std::time(nullptr)) + "1.";
 				SendString = "deck 1 loaded_song track \"" + s_deck1track + "\"";
 				c_SendString = SendString.c_str();
 				SendCommand(c_SendString);
 			}
-			if (s_deck2track.find(".")) {
+			if (s_deck2track.find(".") != string::npos) {
+				//.. found
+			} else {
 				s_deck2track = to_string(std::time(nullptr)) + "2.";
 				SendString = "deck 2 loaded_song track \"" + s_deck2track + "\"";
 				c_SendString = SendString.c_str();
 				SendCommand(c_SendString);
 			}
+
+			if ((s_deck1track == s_deck2track) && (s_deck1track != "")) break;
 
 			if (s_deck1user2.find(s_deck2track) != string::npos) {
 				//.. found.
@@ -378,10 +383,10 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 
 			if (s_remix.at(0) == '\'') { break; }
 
-
 			if (s_remix.at(0) == ' ') { s_remix.replace(0, 1, ""); }
 			if (s_remix.at(0) == ' ') { s_remix.replace(0, 1, ""); }
 
+			replaceAll(s_remix, "] (", ".");
 			replaceAll(s_remix, "[", "");
 			replaceAll(s_remix, "]", "");
 			replaceAll(s_remix, "(", "");
@@ -391,6 +396,7 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			replaceAll(s_remix, "  ", " ");
 
 			s_remix = regex_replace(s_remix, regex(" Clean Single"), ".Clean.Single");
+			s_remix = regex_replace(s_remix, regex("^Clean Single"), "Clean.Single");
 			s_remix = regex_replace(s_remix, regex(" Clean"), ".Clean");
 			s_remix = regex_replace(s_remix, regex(" Extended"), ".Extended");
 			s_remix = regex_replace(s_remix, regex(" Intro"), ".Intro");
@@ -400,11 +406,33 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			s_remix = regex_replace(s_remix, regex(" HD"), ".HD");
 			s_remix = regex_replace(s_remix, regex(" 1080"), ".1080");
 			s_remix = regex_replace(s_remix, regex(" Full.HD"), ".Full HD");
+			s_remix = regex_replace(s_remix, regex(" - "), ".");
 
 
 			SendString = "browsed_song 'remix' '" + s_remix + "'";
 			SendCommand(SendString.c_str());
 			break;
+
+
+		case ID_CMD_9: // send key stroke
+
+			if (t_command == "up") {
+				keybd_event(VK_UP, 0, 0, 0);
+				keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
+			}
+
+			if (t_command == "down") {
+				keybd_event(VK_DOWN, 0, 0, 0);
+				keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
+			}
+
+			if (t_command == "enter") {
+				keybd_event(VK_RETURN, 0, 0, 0);
+				keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
+			}
+
+			break;
+
 
 		case ID_CMD_6: //genre hinzufügen und sortieren
 			GetStringInfo("get_browsed_song 'genre'", genre, 100);
@@ -421,7 +449,7 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			SendString = "browsed_song 'genre' '" + s_Result + "'";
 			SendCommand(SendString.c_str());
 			break;
-					
+	
 		}
 	return 0;
 }

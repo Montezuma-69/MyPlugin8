@@ -33,7 +33,8 @@ protected:
 		ID_CMD_5,
 		ID_CMD_6,
 		ID_CMD_7,
-		ID_CMD_8
+		ID_CMD_8,
+		ID_CMD_9
 
 	} ID_Interface;
 
