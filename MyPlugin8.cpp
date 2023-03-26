@@ -223,6 +223,7 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 		std::string s_genre;
 		std::string s_user1;
 		std::string s_remix;
+		std::string s_string;
 
 		int mix;
 		int xxx;
@@ -378,8 +379,48 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			break;
 
 		case ID_CMD_8: //Remix Klammern entfernen
+			GetStringInfo("get_browsed_song 'title'", title, 100);
+			s_title = title;
 			GetStringInfo("get_browsed_song 'remix'", remix, 100);
 			s_remix = remix;
+
+			s_string = "(Single)";
+			if (s_title.find(s_string) != string::npos) {
+				replace(s_remix, "Single", "");
+				s_remix = s_remix + "Single";
+				replace(s_title, s_string, "");
+			}
+
+			s_string = "(Clean)";
+			if (s_title.find(s_string) != string::npos) {
+				s_remix = s_remix + ".Clean";
+				replace(s_title, s_string, "");
+			}
+
+			s_string = "(Extended)";
+			if (s_title.find(s_string) != string::npos) {
+				s_remix = s_remix + ".Extended";
+				replace(s_title, s_string, "");
+			}
+
+			s_string = "(1080)";
+			if (s_title.find(s_string) != string::npos) {
+				s_remix = s_remix + ".1080";
+				replace(s_title, s_string, "");
+			}
+
+			s_string = "(HD)";
+			if (s_title.find(s_string) != string::npos) {
+				s_remix = s_remix + ".HD";
+				replace(s_title, s_string, "");
+			}
+
+			s_title = regex_replace(s_title, regex("^[ \t]+|[ \t]+$"), "");
+			
+
+			SendString = "browsed_song 'title' '" + s_title + "'";
+			SendCommand(SendString.c_str());
+
 
 			if (s_remix.at(0) == '\'') { break; }
 
@@ -407,7 +448,6 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			s_remix = regex_replace(s_remix, regex(" 1080"), ".1080");
 			s_remix = regex_replace(s_remix, regex(" Full.HD"), ".Full HD");
 			s_remix = regex_replace(s_remix, regex(" - "), ".");
-
 
 			SendString = "browsed_song 'remix' '" + s_remix + "'";
 			SendCommand(SendString.c_str());
