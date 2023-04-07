@@ -244,12 +244,12 @@ HRESULT VDJ_API CMyPlugin8::OnParameter(int id)
 			break;
 
 		case ID_CMD_2: //Tag aus user1 entfernen
-			GetStringInfo("get_browsed_song 'user1'", user1, 100);
+			GetStringInfo("get_browsed_song 'user 1'", user1, 100);
 			s_user1 = user1;
 
 			s_Result = s_user1.replace(s_user1.find(t_command), string(t_command).size(), "");
 
-			SendString = "browsed_song 'user1' '" + s_Result + "'";
+			SendString = "browsed_song 'user 1' '" + s_Result + "'";
 			c_SendString = SendString.c_str();
 
 			SendCommand(c_SendString);
